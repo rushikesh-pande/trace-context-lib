@@ -1,0 +1,8 @@
+com\orderprocessing\trace\TraceProperties.class
+com\orderprocessing\trace\KafkaTraceHeaders.class
+com\orderprocessing\trace\TraceContext.class
+com\orderprocessing\trace\TraceIdGenerator.class
+com\orderprocessing\trace\TraceContext$TraceContextBuilder.class
+com\orderprocessing\trace\TraceFilter.class
+com\orderprocessing\trace\TraceAutoConfig.class
+com\orderprocessing\trace\TraceContextHolder.class
