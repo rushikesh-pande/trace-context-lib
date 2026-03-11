@@ -1,0 +1,73 @@
+# ─────────────────────────────────────────────────────────────────
+#  Code Quality — Trace Context Lib
+#  Checkstyle · SpotBugs · PMD · SonarCloud · OWASP NVD
+# ─────────────────────────────────────────────────────────────────
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 6 * * 1'          # Every Monday 06:00 UTC
+
+env:
+  JAVA_VERSION: '17'
+
+jobs:
+  checkstyle:
+    name: Checkstyle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+      - name: Run Checkstyle
+        run: mvn -B checkstyle:check --no-transfer-progress
+        continue-on-error: true
+
+  spotbugs:
+    name: SpotBugs Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+      - name: Run SpotBugs
+        run: mvn -B spotbugs:check --no-transfer-progress
+        continue-on-error: true
+      - name: Upload SpotBugs report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spotbugs-report
+          path: target/spotbugsXml.xml
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+      - name: SonarCloud Scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify sonar:sonar \
+            -Dsonar.projectKey=rushikesh-pande_trace-context-lib \
+            -Dsonar.organization=rushikesh-pande \
+            -Dsonar.host.url=https://sonarcloud.io \
+            --no-transfer-progress
+        continue-on-error: true

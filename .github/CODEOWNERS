@@ -1,0 +1,32 @@
+# CODEOWNERS — trace-context-lib
+# Defines who is automatically requested for review on PRs.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner — all files
+*                                           @rushikesh-pande
+
+# Java source
+*.java                                      @rushikesh-pande
+src/main/java/**                            @rushikesh-pande
+
+# Tests
+src/test/**                                 @rushikesh-pande
+
+# Maven build
+pom.xml                                     @rushikesh-pande
+
+# Monitoring & Observability
+monitoring/**                               @rushikesh-pande
+src/**/monitoring/**                        @rushikesh-pande
+src/main/resources/logback-spring.xml       @rushikesh-pande
+
+# GitHub Actions / CI-CD
+.github/workflows/**                        @rushikesh-pande
+
+# Security configuration
+src/**/security/**                          @rushikesh-pande
+src/**/config/**                            @rushikesh-pande
+
+# Docker & Infrastructure
+Dockerfile                                  @rushikesh-pande
+docker-compose*.yml                         @rushikesh-pande
