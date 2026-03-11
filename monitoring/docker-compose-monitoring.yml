@@ -1,0 +1,98 @@
+# Monitoring Enhancement: Docker Compose for local monitoring stack
+# Usage: docker-compose -f docker-compose-monitoring.yml up -d
+version: '3.8'
+services:
+
+  prometheus:
+    image: prom/prometheus:v2.49.0
+    container_name: prometheus-trace-co
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus-scrape-config.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: grafana-trace-co
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json:ro
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch-trace-co
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - monitoring
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana-trace-co
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch-trace-co:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - monitoring
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash-trace-co
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    volumes:
+      - ./logstash-pipeline.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager-trace-co
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager-config.yml:/etc/alertmanager/config.yml:ro
+    networks:
+      - monitoring
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  es_data:
+
+networks:
+  monitoring:
+    driver: bridge

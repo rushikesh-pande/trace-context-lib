@@ -1,0 +1,79 @@
+# Monitoring Enhancement: Prometheus Alert Rules for trace-context-lib
+# Deploy to AlertManager alongside Prometheus scrape config.
+groups:
+  - name: trace-context-lib_alerts
+    interval: 30s
+    rules:
+
+      # ── High Error Rate ──────────────────────────────────────────────────────
+      - alert: HighErrorRate_tracecontextlib
+        expr: |
+          rate(tracecontextlib_errors_total{service="trace-context-lib"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: trace-context-lib
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} on trace-context-lib"
+
+      # ── High HTTP Latency ────────────────────────────────────────────────────
+      - alert: HighLatency_tracecontextlib
+        expr: |
+          histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{service="trace-context-lib"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: trace-context-lib
+        annotations:
+          summary: "p95 latency above 2s on trace-context-lib"
+          description: "p95 latency is {{ $value }}s on trace-context-lib"
+
+      # ── Service Down ─────────────────────────────────────────────────────────
+      - alert: ServiceDown_tracecontextlib
+        expr: |
+          up{job="trace-context-lib"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: trace-context-lib
+        annotations:
+          summary: "trace-context-lib is DOWN"
+          description: "trace-context-lib Prometheus target is not reachable"
+
+      # ── High Heap Memory ─────────────────────────────────────────────────────
+      - alert: HighHeapMemory_tracecontextlib
+        expr: |
+          (jvm_memory_used_bytes{service="trace-context-lib",area="heap"} /
+           jvm_memory_max_bytes{service="trace-context-lib",area="heap"}) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: trace-context-lib
+        annotations:
+          summary: "JVM Heap above 85% on trace-context-lib"
+          description: "Heap usage is {{ $value | humanizePercentage }} on trace-context-lib"
+
+      # ── Too Many 5xx Responses ───────────────────────────────────────────────
+      - alert: High5xxRate_tracecontextlib
+        expr: |
+          rate(http_server_requests_seconds_count{service="trace-context-lib",status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: trace-context-lib
+        annotations:
+          summary: "High 5xx rate on trace-context-lib"
+          description: "5xx rate is {{ $value | humanize }} req/s on trace-context-lib"
+
+      # ── High CPU Usage ───────────────────────────────────────────────────────
+      - alert: HighCpuUsage_tracecontextlib
+        expr: |
+          process_cpu_usage{service="trace-context-lib"} > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          service: trace-context-lib
+        annotations:
+          summary: "CPU above 80% on trace-context-lib"
+          description: "CPU usage is {{ $value | humanizePercentage }} on trace-context-lib"
